@@ -252,6 +252,7 @@ function handleCheckout() {
   // O Formspree agora será gerenciado por Fetch API
 
 // NOVO: URL do servidor Render para a rota de newsletter
+// OBRIGATÓRIO: Tem que ser HTTPS!
 const NEWSLETTER_API_URL = 'https://ajestendar-portfolio.onrender.com/subscribe';
 
 if (newsletterForm) {

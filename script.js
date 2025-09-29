@@ -255,42 +255,4 @@ function handleCheckout() {
 // OBRIGATÓRIO: Tem que ser HTTPS!
 const NEWSLETTER_API_URL = 'https://ajestendar-portfolio.onrender.com/subscribe';
 
-if (newsletterForm) {
-    newsletterForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const emailInput = document.getElementById('newsletter-email');
-        const email = emailInput.value;
-
-        if (!email) {
-            showNewsletterFeedback('Por favor, digite um email válido.', false);
-            return;
-        }
-
-        // Feedback de processamento
-        showNewsletterFeedback('Enviando sua inscrição...', false); 
-
-        try {
-            const response = await fetch(NEWSLETTER_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: email }) // Envia apenas o email
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showNewsletterFeedback('Inscrição realizada com sucesso! Você receberá as ofertas!', true);
-                e.target.reset(); // Limpa o formulário
-            } else {
-                showNewsletterFeedback(data.message || 'Erro ao se inscrever. Tente novamente.', false);
-            }
-        } catch (error) {
-            showNewsletterFeedback('Erro de conexão. Verifique sua rede.', false);
-            console.error('Newsletter Fetch Error:', error);
-        }
-    });
-}
 });

@@ -1,10 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
+
+    // =========================================================
+    // 1. CONFIGURAÇÃO E VARIÁVEIS GLOBAIS
+    // =========================================================
+
     const products = [
         { id: 1, name: "Mix de Vegetais Orgânicos", price: 29.90, image: "https://media.istockphoto.com/id/1152758583/pt/foto/assortment-of-fresh-fruits-and-vegetables.webp?a=1&b=1&s=612x612&w=0&k=20&c=LboReEgJ0a3HynMpFKVXYY3HkQJqBuBvOvxlTiDSUrA=" },
         { id: 2, name: "Cesta de Frutas da Estação", price: 35.50, image: "https://media.istockphoto.com/id/1141730914/pt/foto/healthy-food-fresh-organic-fruits-and-vegetables-in-an-old-box.webp?a=1&b=1&s=612x612&w=0&k=20&c=ICM4fsuMoqc0HyAlm275uZcavkDQdvxtg6eblvRWi6k=" },
         { id: 3, name: "Azeite Orgânico Extra Virgem", price: 49.90, image: "https://media.istockphoto.com/id/1206682746/pt/foto/pouring-extra-virgin-olive-oil-in-a-glass-bowl.webp?a=1&b=1&s=612x612&w=0&k=20&c=-XqNh1AvA-I5MF47VVkoPiTjLugps9e3KoomMHUReuw=" },
         { id: 4, name: "Ovos Orgânicos galinha Caipiras", price: 18.00, image: "https://media.istockphoto.com/id/1322511698/pt/foto/chicken-with-freshly-laid-eggs.webp?a=1&b=1&s=612x612&w=0&k=20&c=RBgLSWXnE6zjX5Av8GUBxymzite-19e1Qe1Z4GTUenA=" }
     ];
+
+    // URL do Formspree para o envio AJAX da Newsletter (COLOQUE SUA URL AQUI!)
+    const FORMSPREE_NEWSLETTER_URL = 'https://formspree.io/f/xvgwkgbe'; 
+
+    let cart = []; // Estado global do carrinho
+
+    // =========================================================
+    // 2. SELETORES DO DOM
+    // =========================================================
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const mainNav = document.getElementById('main-nav');
@@ -16,52 +30,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartCountSpan = document.getElementById('cart-count');
     const cartTotalSpan = document.getElementById('cart-total');
     const continueShoppingBtn = document.getElementById('continue-shopping-btn');
-
-    // NOVO: Adicione a seleção do botão de checkout
-    const checkoutBtn = document.querySelector('.checkout-btn'); 
-
-    let cart = [];
-
+    const checkoutBtn = document.querySelector('.checkout-btn');
     const newsletterForm = document.getElementById('newsletter-form');
+    const emailInput = document.getElementById('newsletter-email');
 
-    //função para abrir/fechar o menu Sanduíche no clique
-    if (hamburgerBtn) {
-    hamburgerBtn.addEventListener('click', () => {
-        // Toggle a classe 'open' no elemento de navegação
-        mainNav.classList.toggle('open');
-    });
-}
-    
-// FUNÇÃO DE FEEDBACK DA NEWSLETTER (Nova)
-function showNewsletterFeedback(message, isSuccess = true) {
-    let feedbackElement = document.getElementById('newsletter-feedback');
-    if (!feedbackElement) {
-        // Cria o elemento de feedback se ele não existir
-        feedbackElement = document.createElement('p');
-        feedbackElement.id = 'newsletter-feedback';
-        feedbackElement.style.marginTop = '15px';
-        feedbackElement.style.fontWeight = 'bold';
+
+    // =========================================================
+    // 3. FUNÇÕES DE UTILIDADE E AUXILIARES
+    // =========================================================
+
+    // Função para abrir e fechar o carrinho
+    function toggleCart() {
+        cartSidebar.classList.toggle('open');
+    }
+
+    // Função para renderizar o feedback da newsletter
+    function showNewsletterFeedback(message, isSuccess = true) {
+        let feedbackElement = document.getElementById('newsletter-feedback');
+        if (!feedbackElement) {
+            feedbackElement = document.createElement('p');
+            feedbackElement.id = 'newsletter-feedback';
+            feedbackElement.style.marginTop = '15px';
+            feedbackElement.style.fontWeight = 'bold';
+            
+            if (newsletterForm) {
+                newsletterForm.after(feedbackElement);
+            } else {
+                return;
+            }
+        }
+        feedbackElement.textContent = message;
+        // Assume que as variáveis CSS estão disponíveis globalmente (correto)
+        feedbackElement.style.color = isSuccess ? '#4CAF50' : '#ff6347'; 
         
-        // Garante que o feedback seja inserido após o formulário
-        const newsletterForm = document.getElementById('newsletter-form');
-        if (newsletterForm) {
-            newsletterForm.after(feedbackElement);
+        setTimeout(() => {
+            feedbackElement.textContent = '';
+        }, 4000);
+    }
+
+    // FUNÇÕES DO CARRINHO
+    function updateCartUI() {
+        // ... (o código da updateCartUI é longo, mas está correto) ...
+        cartItemsContainer.innerHTML = '';
+        let total = 0;
+        let totalCount = 0;
+
+        if (cart.length === 0) {
+             cartItemsContainer.innerHTML = '<p style="text-align: center; color: #777;">Seu carrinho está vazio.</p>';
         } else {
-            // Se o form não existir, não faça nada para evitar erros
-            return;
+             cart.forEach(item => {
+                 const itemElement = document.createElement('div');
+                 itemElement.classList.add('cart-item');
+                 itemElement.innerHTML = `
+                     <img src="${item.image}" alt="${item.name}">
+                     <div class="item-info">
+                         <h4>${item.name}</h4>
+                         <p>R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</p>
+                         <div class="item-quantity">
+                             <button class="quantity-btn decrease-btn" data-id="${item.id}">-</button>
+                             <span class="quantity">${item.quantity}</span>
+                             <button class="quantity-btn increase-btn" data-id="${item.id}">+</button>
+                         </div>
+                     </div>
+                     <button class="remove-item-btn" data-id="${item.id}">
+                         <i class="fas fa-trash-alt"></i>
+                     </button>
+                 `;
+                 cartItemsContainer.appendChild(itemElement);
+                 total += item.price * item.quantity;
+                 totalCount += item.quantity;
+             });
+        }
+        
+        cartCountSpan.textContent = totalCount;
+        cartTotalSpan.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        
+    }
+    
+    function increaseQuantity(productId) {
+        const item = cart.find(i => i.id === parseInt(productId));
+        if (item) {
+            item.quantity++;
+            updateCartUI();
         }
     }
-    feedbackElement.textContent = message;
-    // Usa as variáveis CSS definidas no seu style.css
-    feedbackElement.style.color = isSuccess ? 'var(--secondary-color)' : '#ff6347'; 
-    
-    // Faz a mensagem desaparecer após 4 segundos
-    setTimeout(() => {
-        feedbackElement.textContent = '';
-    }, 4000);
-}
 
-    // Função para renderizar os produtos dinamicamente
+    function decreaseQuantity(productId) {
+        const item = cart.find(i => i.id === parseInt(productId));
+        if (item && item.quantity > 1) {
+            item.quantity--;
+            updateCartUI();
+        } else if (item && item.quantity === 1) {
+            removeItem(productId);
+        }
+    }
+
+    function addItem(productId) {
+        const existingItem = cart.find(item => item.id === parseInt(productId));
+        if (existingItem) {
+            existingItem.quantity++;
+        } else {
+            const productToAdd = products.find(p => p.id === parseInt(productId));
+            if (productToAdd) {
+                cart.push({ ...productToAdd, quantity: 1 });
+            }
+        }
+        updateCartUI();
+    }
+
+    function removeItem(productId) {
+        cart = cart.filter(item => item.id !== parseInt(productId));
+        updateCartUI();
+    }
+    
     function renderProducts() {
         productsContainer.innerHTML = '';
         products.forEach(product => {
@@ -79,132 +160,60 @@ function showNewsletterFeedback(message, isSuccess = true) {
         });
     }
 
-    // Função para abrir e fechar o carrinho
-    function toggleCart() {
-        cartSidebar.classList.toggle('open');
-    }
-
-    // Função para atualizar o HTML do carrinho
-    function updateCartUI() {
-        cartItemsContainer.innerHTML = '';
-        let total = 0;
-        let totalCount = 0;
-
+    // Funções de Checkout
+    function handleCheckout() {
         if (cart.length === 0) {
-            cartItemsContainer.innerHTML = '<p style="text-align: center; color: #777;">Seu carrinho está vazio.</p>';
-        } else {
-            cart.forEach(item => {
-                const itemElement = document.createElement('div');
-                itemElement.classList.add('cart-item');
-                itemElement.innerHTML = `
-                    <img src="${item.image}" alt="${item.name}">
-                    <div class="item-info">
-                        <h4>${item.name}</h4>
-                        <p>R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</p>
-                        <div class="item-quantity">
-                            <button class="quantity-btn decrease-btn" data-id="${item.id}">-</button>
-                            <span class="quantity">${item.quantity}</span>
-                            <button class="quantity-btn increase-btn" data-id="${item.id}">+</button>
-                        </div>
-                    </div>
-                    <button class="remove-item-btn" data-id="${item.id}">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                `;
-                cartItemsContainer.appendChild(itemElement);
-                total += item.price * item.quantity;
-                totalCount += item.quantity;
-            });
+            alert('Seu carrinho está vazio! Adicione alguns produtos antes de finalizar a compra.');
+            return;
         }
+
+        let total = 0;
+        let message = "Olá! Gostaria de fazer o seguinte pedido de produtos orgânicos:\n\n";
         
-        cartCountSpan.textContent = totalCount;
-        cartTotalSpan.textContent = `R$ ${total.toFixed(2).replace('.', ',')}`;
-    }
+        cart.forEach(item => {
+            message += ` - ${item.name} | Qtd: ${item.quantity} | Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n`;
+            total += item.price * item.quantity;
+        });
 
-    // FUNÇÕES DE QUANTIDADE
-    function increaseQuantity(productId) {
-        const item = cart.find(i => i.id === parseInt(productId));
-        if (item) {
-            item.quantity++;
-            updateCartUI();
-        }
-    }
+        const totalFormatted = total.toFixed(2).replace('.', ',');
+        message += `\nTotal Geral: R$ ${totalFormatted}`;
+        message += "\n\nPor favor, aguardo a confirmação da disponibilidade e opções de frete.";
 
-    function decreaseQuantity(productId) {
-        const item = cart.find(i => i.id === parseInt(productId));
-        if (item && item.quantity > 1) {
-            item.quantity--;
-            updateCartUI();
-        } else if (item && item.quantity === 1) {
-            removeItem(productId); // Remove o item se a quantidade for 1
-        }
-    }
-
-    // ATUALIZADO: Lógica de adicionar item
-    function addItem(productId) {
-        const existingItem = cart.find(item => item.id === parseInt(productId));
-        if (existingItem) {
-            existingItem.quantity++;
-        } else {
-            const productToAdd = products.find(p => p.id === parseInt(productId));
-            if (productToAdd) {
-                cart.push({ ...productToAdd, quantity: 1 });
-            }
-        }
+        const phoneNumber = "+5519983279515"; 
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        
+        window.open(whatsappLink, '_blank');
+        
+        cart = [];
         updateCartUI();
-       
+        toggleCart();
+
+        alert("Seu pedido foi montado! Verifique a nova aba ou permita o pop-up para falar conosco no WhatsApp.");
     }
 
-    // ATUALIZADO: Lógica de remover item
-    function removeItem(productId) {
-        cart = cart.filter(item => item.id !== parseInt(productId));
-        updateCartUI();
-    }
 
-    // Função para simular o processo de checkout
-// VERSÃO DE TESTE: TENTATIVA DE WHATSAPP DIRETO
-function handleCheckout() {
-    if (cart.length === 0) {
-        alert('Seu carrinho está vazio! Adicione alguns produtos antes de finalizar a compra.');
-        return;
-    }
-
-    // 1. MONTAGEM DO PEDIDO
-    let total = 0;
-    let message = "Olá! Gostaria de fazer o seguinte pedido de produtos orgânicos:\n\n";
+    // =========================================================
+    // 4. LISTENERS DE EVENTOS
+    // =========================================================
     
-    cart.forEach(item => {
-        message += ` - ${item.name} | Qtd: ${item.quantity} | Subtotal: R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}\n`;
-        total += item.price * item.quantity;
-    });
-
-    const totalFormatted = total.toFixed(2).replace('.', ',');
-    message += `\nTotal Geral: R$ ${totalFormatted}`;
-    message += "\n\nPor favor, aguardo a confirmação da disponibilidade e opções de frete.";
-
-    // 2. REDIRECIONAMENTO PARA O WHATSAPP
-    const phoneNumber = "+5519983279515"; // Seu número
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappLink = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    
-    // ATENÇÃO: O navegador pode BLOQUEAR este pop-up. Avise o cliente.
-    window.open(whatsappLink, '_blank');
-    
-    // 3. LIMPEZA E FEEDBACK
-    cart = [];
+    // Inicialização da página
+    renderProducts();
     updateCartUI();
-    toggleCart();
 
-    // Feedback adicional, caso o pop-up seja bloqueado
-    alert("Seu pedido foi montado! Verifique a nova aba ou permita o pop-up para falar conosco no WhatsApp.");
-}
-
-
-    // Eventos
+    // Carrinho e Navegação
     cartIcon.addEventListener('click', toggleCart);
     closeCartBtn.addEventListener('click', toggleCart);
     checkoutBtn.addEventListener('click', handleCheckout); 
+    continueShoppingBtn.addEventListener('click', toggleCart);
 
+    if (hamburgerBtn) {
+        hamburgerBtn.addEventListener('click', () => {
+            mainNav.classList.toggle('open');
+        });
+    }
+
+    // Adicionar ao Carrinho
     productsContainer.addEventListener('click', (event) => {
         if (event.target.classList.contains('add-to-cart-btn')) {
             const productId = event.target.dataset.id;
@@ -212,47 +221,70 @@ function handleCheckout() {
         }
     });
 
-   cartItemsContainer.addEventListener('click', (event) => {
-    const target = event.target;
-    let productId;
+    // Manipulação de Itens no Carrinho
+    cartItemsContainer.addEventListener('click', (event) => {
+        const target = event.target;
+        let productId;
 
-    // 1. LÓGICA DE REMOÇÃO TOTAL (LIXEIRA)
-    const removeBtn = target.closest('.remove-item-btn');
-    if (removeBtn) { 
-        productId = removeBtn.dataset.id;
-        removeItem(productId); // <<-- AGORA CHAMA A FUNÇÃO DE REMOÇÃO TOTAL
-        return; 
-    } 
+        const removeBtn = target.closest('.remove-item-btn');
+        if (removeBtn) { 
+            productId = removeBtn.dataset.id;
+            removeItem(productId);
+            return; 
+        } 
+        
+        const increaseBtn = target.closest('.increase-btn');
+        if (increaseBtn) {
+            productId = increaseBtn.dataset.id;
+            increaseQuantity(productId);
+            return;
+        } 
+        
+        const decreaseBtn = target.closest('.decrease-btn');
+        if (decreaseBtn) {
+            productId = decreaseBtn.dataset.id;
+            decreaseQuantity(productId);
+            return;
+        }
+    });
     
-    // 2. LÓGICA AUMENTAR QUANTIDADE (+)
-    const increaseBtn = target.closest('.increase-btn');
-    if (increaseBtn) {
-        productId = increaseBtn.dataset.id;
-        increaseQuantity(productId);
-        return;
-    } 
-    
-    // 3. LÓGICA DIMINUIR QUANTIDADE (-)
-    const decreaseBtn = target.closest('.decrease-btn');
-    if (decreaseBtn) {
-        productId = decreaseBtn.dataset.id;
-        decreaseQuantity(productId); // <<-- DIMINUI 1 DA QUANTIDADE
-        return;
+    // Newsletter (Formspree AJAX - SILENCIOSA)
+    if (newsletterForm) {
+        newsletterForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = emailInput.value;
+            
+            if (!email) {
+                showNewsletterFeedback('Por favor, digite um email válido.', false);
+                return;
+            }
+
+            const formData = new FormData(newsletterForm);
+
+            showNewsletterFeedback('Enviando sua inscrição...', false);
+
+            try {
+                const response = await fetch(FORMSPREE_NEWSLETTER_URL, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json' 
+                    }
+                });
+
+                if (response.ok) {
+                    showNewsletterFeedback('Inscrição realizada com sucesso! Você receberá as ofertas!', true);
+                    newsletterForm.reset();
+                } else {
+                    const data = await response.json();
+                    showNewsletterFeedback(data.error || 'Falha ao se inscrever. Tente novamente.', false);
+                }
+            } catch (error) {
+                showNewsletterFeedback('Erro de rede. Verifique sua conexão.', false);
+                console.error('Newsletter Fetch Error:', error);
+            }
+        });
     }
-});
-
- if (continueShoppingBtn) {
-    continueShoppingBtn.addEventListener('click', toggleCart); // toggleCart é a função que abre/fecha o carrinho
-}
-
-    renderProducts();
-    updateCartUI();
-
-     // Adiciona o evento de submit para o formulário de newsletter
-  // O Formspree agora será gerenciado por Fetch API
-
-// NOVO: URL do servidor Render para a rota de newsletter
-// OBRIGATÓRIO: Tem que ser HTTPS!
-const NEWSLETTER_API_URL = 'https://ajestendar-portfolio.onrender.com/subscribe';
 
 });

@@ -858,4 +858,10 @@ body {
     }
 }
 
+@media(max-width:360px) {
+    .cta-final-button{
+        padding: 1rem 2rem;
+    } 
+}
+
 /* newsletter url: https://formspree.io/f/xvgwkgbe*/
